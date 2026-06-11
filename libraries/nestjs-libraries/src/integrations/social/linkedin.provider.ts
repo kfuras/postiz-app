@@ -476,6 +476,29 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
     }, {} as Record<string, string[]>);
   }
 
+  private extractFirstUrl(message: string): string | null {
+    const match = message.match(/https?:\/\/[^\s]+/i);
+    return match?.[0] || null;
+  }
+
+  private buildLinkPostContent(message: string) {
+    const url = this.extractFirstUrl(message);
+
+    if (!url) {
+      return {};
+    }
+
+    return {
+      content: {
+        article: {
+          originalUrl: url,
+          title: '',
+          description: '',
+        },
+      },
+    };
+  }
+
   private async prepareMediaBuffer(mediaUrl: string): Promise<Buffer> {
     const isVideo = mediaUrl.indexOf('mp4') > -1;
 
@@ -491,9 +514,14 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
       .toBuffer();
   }
 
-  private buildPostContent(isPdf: boolean, mediaIds: string[], pdfTitle?: string) {
+  private buildPostContent(
+  message: string,
+  isPdf: boolean,
+  mediaIds: string[],
+  pdfTitle?: string
+) {
     if (mediaIds.length === 0) {
-      return {};
+        return this.buildLinkPostContent(message);
     }
 
     if (mediaIds.length === 1) {
@@ -536,7 +564,7 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
         targetEntities: [] as string[],
         thirdPartyDistributionChannels: [] as string[],
       },
-      ...this.buildPostContent(isPdf, mediaIds, pdfTitle),
+      ...this.buildPostContent(message, isPdf, mediaIds, pdfTitle),
       lifecycleState: 'PUBLISHED',
       isReshareDisabledByAuthor: false,
     };
